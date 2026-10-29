@@ -1,0 +1,17 @@
+{
+  "timeScale": 2,
+  "freezeTime": false,
+  "startHour": 8,
+  "dynamic": true,
+  "weathers": [
+    "EXTRASUNNY",
+    "CLEAR",
+    "CLOUDS",
+    "OVERCAST",
+    "RAIN",
+    "CLEARING",
+    "FOGGY"
+  ],
+  "changeMinutes": 20,
+  "blackout": false
+}
