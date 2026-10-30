@@ -1,7 +1,9 @@
 import { isRecord } from "@aicore-fivem/lib/shared";
 import {
   AdminPanel,
+  every,
   GlobalKey,
+  type Job,
   onClientCallback,
   provideExport,
   registerExport,
@@ -46,7 +48,7 @@ class World {
   blackout: boolean | null = null;
   frozen: boolean | null = null;
   dynamic: boolean | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: Job | null = null;
 
   publish(): void {
     clockState.set(this.clock);
@@ -76,17 +78,21 @@ class World {
 
   /** Dynamic weather: the next one from the list, a step at a time (rain clears before sun). */
   schedule(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.timer?.stop();
     this.timer = null;
     if (!(this.dynamic ?? content.settings.dynamic)) return;
-    this.timer = setInterval(() => {
-      const list = content.settings.weathers;
-      const index = list.indexOf(this.weather);
-      const next =
-        list[(index + 1 + Math.floor(Math.random() * 2)) % list.length] ??
-        this.weather;
-      this.setWeather(next);
-    }, content.settings.changeMinutes * 60_000);
+    this.timer = every(
+      content.settings.changeMinutes * 60_000,
+      () => {
+        const list = content.settings.weathers;
+        const index = list.indexOf(this.weather);
+        const next =
+          list[(index + 1 + Math.floor(Math.random() * 2)) % list.length] ??
+          this.weather;
+        this.setWeather(next);
+      },
+      { name: "weather" },
+    );
   }
 }
 

@@ -1,4 +1,8 @@
-import { GlobalKey, triggerServerCallback } from "@aicore-fivem/lib/client";
+import {
+  every,
+  GlobalKey,
+  triggerServerCallback,
+} from "@aicore-fivem/lib/client";
 import { isRecord, record } from "@aicore-fivem/lib/shared";
 import { isWeather } from "@aicore-fivem/shared";
 import {
@@ -40,7 +44,7 @@ class Sync {
     );
     if (typeof now === "number") this.offset = now - Date.now();
     this.applyWeather(weatherState.get(), true);
-    setInterval(() => this.tickClock(), 2000);
+    every(2000, () => this.tickClock(), { name: "clock" });
     this.tickClock();
   }
 
