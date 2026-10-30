@@ -1,5 +1,5 @@
-import { triggerServerCallback } from "@aicore-fivem/lib/client";
-import { record } from "@aicore-fivem/lib/shared";
+import { GlobalKey, triggerServerCallback } from "@aicore-fivem/lib/client";
+import { isRecord, record } from "@aicore-fivem/lib/shared";
 import {
   EVENTS,
   isWeather,
@@ -9,12 +9,15 @@ import {
   type Clock,
 } from "common/world";
 
+const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? undefined);
+const weatherState = new GlobalKey(KEYS.weather, (v) => (isRecord(v) ? v : undefined));
+
 /**
  * Applies the server's clock and weather: the clock runs on this client's own timer (server time offset taken once),
  * the weather changes over 15 s when GlobalState says so. Scripts can pause it (interiors) with the qb events.
  */
 class Sync {
-  private clock: Clock | null = toClock(GlobalState[KEYS.clock]);
+  private clock: Clock | null = clockState.get() ?? null;
   private weather = "";
   private offset = 0;
   enabled = true;
@@ -24,7 +27,7 @@ class Sync {
       () => null,
     );
     if (typeof now === "number") this.offset = now - Date.now();
-    this.applyWeather(GlobalState[KEYS.weather], true);
+    this.applyWeather(weatherState.get(), true);
     setInterval(() => this.tickClock(), 2000);
     this.tickClock();
   }
@@ -67,16 +70,8 @@ class Sync {
 const sync = new Sync();
 void sync.start();
 
-AddStateBagChangeHandler(
-  KEYS.clock,
-  "global",
-  (_bag: string, _key: string, value: unknown) => sync.setClock(value),
-);
-AddStateBagChangeHandler(
-  KEYS.weather,
-  "global",
-  (_bag: string, _key: string, value: unknown) => sync.applyWeather(value),
-);
+clockState.onChange((_id, clock) => sync.setClock(clock));
+weatherState.onChange((_id, weather) => sync.applyWeather(weather));
 
 // qb-weathersync's client events: other scripts turn the sync off inside interiors and back on after.
 on("qb-weathersync:client:DisableSync", () => {
@@ -84,5 +79,5 @@ on("qb-weathersync:client:DisableSync", () => {
 });
 on("qb-weathersync:client:EnableSync", () => {
   sync.enabled = true;
-  sync.applyWeather(GlobalState[KEYS.weather], true);
+  sync.applyWeather(weatherState.get(), true);
 });

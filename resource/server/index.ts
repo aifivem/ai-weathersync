@@ -1,9 +1,5 @@
-import {
-  AdminPanel,
-  onClientCallback,
-  provideExport,
-  registerExport,
-} from "@aicore-fivem/lib/server";
+import { isRecord } from "@aicore-fivem/lib/shared";
+import { AdminPanel, GlobalKey, onClientCallback, provideExport, registerExport } from "@aicore-fivem/lib/server";
 import type { PanelSchema } from "@aicore-fivem/shared";
 import {
   EVENTS,
@@ -16,6 +12,9 @@ import {
   type Clock,
   type Weather,
 } from "common/world";
+
+const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? undefined);
+const weatherState = new GlobalKey(KEYS.weather, (v) => (isRecord(v) ? v : undefined));
 
 /** ai-weathersync's panel: how time runs and how the weather changes. */
 const schema: PanelSchema = {
@@ -135,12 +134,8 @@ class World {
   private timer: ReturnType<typeof setInterval> | null = null;
 
   publish(): void {
-    GlobalState.set(KEYS.clock, this.clock, true);
-    GlobalState.set(
-      KEYS.weather,
-      { type: this.weather, blackout: content.settings.blackout },
-      true,
-    );
+    clockState.set(this.clock);
+    weatherState.set({ type: this.weather, blackout: content.settings.blackout });
   }
 
   /** Re-bases the clock at the current game time with new speed / freeze. */
@@ -178,7 +173,7 @@ class World {
 }
 
 const world = new World();
-const restored = toClock(GlobalState[KEYS.clock]);
+const restored = clockState.get();
 if (restored) world.clock = restored;
 world.publish();
 world.schedule();
