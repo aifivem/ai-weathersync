@@ -40,11 +40,11 @@ try{
 	const fromServer = () => Boolean(globalThis.source);
 
 // ../../../packages/lib/src/client/callback.ts
-	const resource = GetCurrentResourceName();
-	const log$1 = createLogger(resource);
+	const resource$1 = GetCurrentResourceName();
+	const log$1 = createLogger(resource$1);
 	const pending = /* @__PURE__ */ new Map();
 	let nextId = 0;
-	onNet(responseEvent(resource), (id, ok, result) => {
+	onNet(responseEvent(resource$1), (id, ok, result) => {
 		if (!fromServer()) return;
 		const entry = typeof id === "number" ? pending.get(id) : void 0;
 		if (!entry) return;
@@ -69,7 +69,7 @@ try{
 				reject,
 				timer
 			});
-			emitNet(requestEvent(name), resource, id, ...args);
+			emitNet(requestEvent(name), resource$1, id, ...args);
 		});
 	}
 
@@ -95,10 +95,18 @@ try{
 		activeGangChangedEvent: "ai-core:activeGangChanged",
 		/** (src, charIds: number[]) each time a player's character screen loads; an appearance resource answers with portraits. */
 		characterScreenEvent: "ai-core:characterScreen",
+		/** (resource: string | null) the inventory behind ai-core's inventory layer changed (the bridge drops its item cache). */
+		inventoryChangedEvent: "ai-core:inventoryChanged",
+		/** (src, name: string, status: Record<string, number> | null) a player used an item; status = the needs it gives, from inventories that define them. */
+		itemUsedEvent: "ai-core:itemUsed",
+		/** (src, killer: number | null, weaponHash: number) a player with a loaded character died; fired from FXServer's `onPedDeath` (needs `PED_DEATH_STATE_KEY`). */
+		playerDiedEvent: "ai-core:playerDied",
 		clientPlayerLoadedEvent: "ai-core:client:playerLoaded",
 		clientPlayerUnloadedEvent: "ai-core:client:playerUnloaded",
 		/** (charId: number, url: string) a portrait image of a character on the character screen (e.g. `https://nui-img/<txd>/<txd>`). */
 		clientCharacterPortraitEvent: "ai-core:client:characterPortrait",
+		/** (charId: number) ai-appearance holds this character's look: ai-core dresses its scene ped with `ApplyCharacterAppearance`. */
+		clientCharacterLookEvent: "ai-core:client:characterLook",
 		/** (resource: string, id: string) the interaction key was pressed while that resource's prompt was on top. */
 		clientPromptPressedEvent: "ai-core:client:promptPressed",
 		/** (key: keyof PlayerCache, value) a cached value of the local player changed (one watcher in ai-core for every resource). */
@@ -119,6 +127,8 @@ try{
 	const MENU_EVENTS = {
 		/** Client local: (resource, requestId, itemId | null) the player picked an item or closed the menu. */
 		menuResult: "ai-core:client:menuResult",
+		/** Client local: (resource, requestId, itemId) the pointer or focus is on an item (previews). */
+		menuHover: "ai-core:client:menuHover",
 		/** Client local: (resource, requestId, values | null) the player confirmed or closed the input dialog. */
 		inputResult: "ai-core:client:inputResult"
 	};
@@ -178,19 +188,25 @@ try{
 	var Requests = class {
 		resource = GetCurrentResourceName();
 		waiting = /* @__PURE__ */ new Map();
+		hovers = /* @__PURE__ */ new Map();
 		nextId = 0;
 		constructor() {
 			const answer = (owner, id, value) => {
 				if (owner !== this.resource || typeof id !== "number") return;
 				this.waiting.get(id)?.(value);
 				this.waiting.delete(id);
+				this.hovers.delete(id);
 			};
+			on(MENU_EVENTS.menuHover, (owner, id, item) => {
+				if (owner === this.resource && typeof id === "number" && typeof item === "string") this.hovers.get(id)?.(item);
+			});
 			on(MENU_EVENTS.menuResult, answer);
 			on(MENU_EVENTS.inputResult, answer);
 		}
-		ask(open, read) {
+		ask(open, read, onHover) {
 			const id = ++this.nextId;
 			this.waiting.set(id, read);
+			if (onHover) this.hovers.set(id, onHover);
 			open(id);
 		}
 	};
@@ -198,6 +214,9 @@ try{
 
 // ../../../packages/lib/src/client/vehicleProps.ts
 	const MOD_TYPES = Array.from({ length: 50 }, (_, i) => i);
+
+// ../../../packages/lib/src/client/keybind.ts
+	const resource = GetCurrentResourceName();
 
 // resource/common/world.ts
 /** ai-weathersync's contracts. No natives. */
