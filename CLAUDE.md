@@ -4,7 +4,7 @@ Time and weather, the same for every player, set in the admin panel (speed, star
 
 ## Decisions
 
-- The server publishes only changes as GlobalState: `ai:clock` (`{ base, at, scale, frozen }`, game minutes at a server time) and `ai:weather` (`{ type, blackout }`). Clients run the clock themselves on a 2 s timer with a server time offset taken once (`ai-weathersync:now`); no per-minute broadcasts.
+- The server publishes only changes as GlobalState: `ai:clock` (`{ base, at, scale, frozen }`, game minutes at a server time) and `ai:weather` (`{ type, blackout }`). Clients run the clock themselves with a server time offset taken once (`ai-weathersync:now`); no per-minute broadcasts. The game clock runs at the server's speed (`NetworkOverrideClockMillisecondsPerGameMinute` = 60000 / scale) or stands still (`PauseClock`) while frozen, and a 2 s timer sets the exact time with seconds, so the clock never steps back and forth; a pause gives the game its default speed back.
 - A panel change re-bases the clock at the current game time, so changing the speed does not jump the hour.
 - Dynamic weather steps through the panel's list (one or two steps each change).
 - Weather types are the shared contract's `WEATHERS` / `Weather` / `isWeather` (`@aicore-fivem/shared`); never an own list.
@@ -14,7 +14,7 @@ Time and weather, the same for every player, set in the admin panel (speed, star
 
 ## Contracts
 
-- GlobalState `ai:clock`, `ai:weather`. Exports (own and `qb-weathersync`, its whole contract): `setWeather`, `setTime`, `setBlackout`, `setTimeFreeze`, `setDynamicWeather`, `nextWeatherStage`, `getWeatherState`, `getTime`, `getBlackoutState`, `getTimeFreezeState`, `getDynamicWeather`; scripts reach them through ai-core (lib `world`). Client events `qb-weathersync:client:DisableSync` / `EnableSync` pause the sync (interiors).
+- GlobalState `ai:clock`, `ai:weather`. Exports (own and `qb-weathersync`, its whole contract): `setWeather`, `setTime`, `setBlackout`, `setTimeFreeze`, `setDynamicWeather`, `nextWeatherStage`, `getWeatherState`, `getTime`, `getBlackoutState`, `getTimeFreezeState`, `getDynamicWeather`; scripts reach them through ai-core (lib `world`). The client pauses only on ai-core's `CORE.clientWorldSyncEvent` (plus `IsWorldSyncPaused` at start); ai-core turns the qb / cd_easytime / vSync pause events of other scripts into it.
 
 ## Entry points
 
