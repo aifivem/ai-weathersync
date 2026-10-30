@@ -1,5 +1,5 @@
 name 'ai-weathersync'
-author 'ai-core'
+author 'TGIANN'
 version '0.1.0'
 license 'GPL-3.0-only'
 description 'Time and weather synced for everyone, set in the admin panel'

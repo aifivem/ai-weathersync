@@ -15,6 +15,6 @@
   ],
   "changeMinutes": 20,
   "blackout": false,
-  "snowGrip": 0.2,
+  "snowGrip": 0,
   "snowGround": true
 }
