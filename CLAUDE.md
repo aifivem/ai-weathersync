@@ -1,6 +1,6 @@
 # ai-weathersync
 
-Time and weather, the same for every player, set in the admin panel (speed, start hour, freeze, weather list and change interval, blackout). Stands in for `qb-weathersync`. Depends on ai-core (admin panel). Research and decisions: `docs/research/ai-weathersync.md`.
+Time and weather, the same for every player, set in the admin panel (speed, start hour, freeze, weather list and change interval, blackout). Stands in for `qb-weathersync`. Depends on ai-core (admin panel).
 
 ## Decisions
 
