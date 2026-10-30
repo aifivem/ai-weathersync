@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-weathersync/data/regions.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    }
+  },
+  "patternProperties": {
+    "^[a-z0-9_]{2,32}$": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "Name",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "center": {
+          "description": "Centre: The middle of the region on the ground.",
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          }
+        },
+        "radius": {
+          "description": "Radius: How far the region reaches from its centre (any height).",
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 6000
+        },
+        "weathers": {
+          "description": "Weathers: The weathers this region steps through, in order.",
+          "type": "array",
+          "maxItems": 15,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 16,
+            "pattern": "^(EXTRASUNNY|CLEAR|NEUTRAL|SMOG|FOGGY|OVERCAST|CLOUDS|CLEARING|RAIN|THUNDER|SNOW|BLIZZARD|SNOWLIGHT|XMAS|HALLOWEEN)$"
+          }
+        },
+        "changeMinutes": {
+          "description": "Change every: Real minutes between weather changes.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "label",
+        "center",
+        "radius",
+        "weathers",
+        "changeMinutes"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

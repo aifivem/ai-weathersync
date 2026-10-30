@@ -1,0 +1,211 @@
+import type { PanelSchema } from "@aicore-fivem/shared";
+import { WEATHERS } from "common/world";
+
+/** ai-weathersync's panel: how time runs and how the weather changes. */
+export const schema: PanelSchema = {
+  title: "ADMIN_TITLE",
+  icon: "sliders",
+  files: {
+    settings: {
+      kind: "settings",
+      sync: "all",
+      sections: {
+        timeScale: { type: "number", min: 0.1, max: 120 },
+        freezeTime: { type: "bool" },
+        startHour: { type: "number", min: 0, max: 23, integer: true },
+        dynamic: { type: "bool" },
+        weathers: {
+          type: "names",
+          max: 15,
+          itemMax: 16,
+          pattern: `^(${WEATHERS.join("|")})$`,
+        },
+        changeMinutes: { type: "number", min: 1, max: 600, integer: true },
+        blackout: { type: "bool" },
+        snowGrip: { type: "number", min: 0, max: 1, optional: true },
+        snowGround: { type: "bool", optional: true },
+      },
+      defaults: { snowGrip: 0.2, snowGround: true },
+    },
+    regions: {
+      kind: "records",
+      sync: "all",
+      labelPath: "label",
+      newRecord: {
+        center: { x: 0, y: 0, z: 0 },
+        radius: 600,
+        weathers: ["SNOW", "SNOWLIGHT"],
+        changeMinutes: 20,
+      },
+      sections: {
+        label: { type: "text", min: 1, max: 48 },
+        center: { type: "vec3" },
+        radius: { type: "number", min: 50, max: 6000, integer: true },
+        weathers: {
+          type: "names",
+          max: 15,
+          itemMax: 16,
+          pattern: `^(${WEATHERS.join("|")})$`,
+        },
+        changeMinutes: { type: "number", min: 1, max: 600, integer: true },
+      },
+    },
+  },
+  tabs: [
+    {
+      id: "settings",
+      file: "settings",
+      icon: "sliders",
+      label: "ADMIN_TAB_SETTINGS",
+      desc: "ADMIN_TAB_SETTINGS_DESC",
+      cards: [
+        {
+          icon: "sliders",
+          title: "ADMIN_C_TIME",
+          desc: "ADMIN_C_TIME_DESC",
+          fields: [
+            {
+              widget: "number",
+              path: "timeScale",
+              label: "ADMIN_F_SCALE",
+              hint: "ADMIN_H_SCALE",
+              min: 0.1,
+              max: 120,
+              step: 0.5,
+            },
+            {
+              widget: "number",
+              path: "startHour",
+              label: "ADMIN_F_START_HOUR",
+              hint: "ADMIN_H_START_HOUR",
+              min: 0,
+              max: 23,
+            },
+            {
+              widget: "switch",
+              path: "freezeTime",
+              label: "ADMIN_F_FREEZE",
+              hint: "ADMIN_H_FREEZE",
+            },
+          ],
+        },
+        {
+          icon: "sliders",
+          title: "ADMIN_C_WEATHER",
+          desc: "ADMIN_C_WEATHER_DESC",
+          fields: [
+            {
+              widget: "switch",
+              path: "dynamic",
+              label: "ADMIN_F_DYNAMIC",
+              hint: "ADMIN_H_DYNAMIC",
+            },
+            {
+              widget: "tags",
+              path: "weathers",
+              label: "ADMIN_F_WEATHERS",
+              hint: "ADMIN_H_WEATHERS",
+              placeholder: "ADMIN_P_WEATHERS",
+            },
+            {
+              widget: "number",
+              path: "changeMinutes",
+              label: "ADMIN_F_CHANGE",
+              hint: "ADMIN_H_CHANGE",
+              min: 1,
+              max: 600,
+              unit: "min",
+            },
+            {
+              widget: "switch",
+              path: "blackout",
+              label: "ADMIN_F_BLACKOUT",
+              hint: "ADMIN_H_BLACKOUT",
+            },
+          ],
+        },
+        {
+          icon: "snowflake",
+          title: "ADMIN_C_SNOW",
+          desc: "ADMIN_C_SNOW_DESC",
+          fields: [
+            {
+              widget: "number",
+              path: "snowGrip",
+              label: "ADMIN_F_SNOW_GRIP",
+              hint: "ADMIN_H_SNOW_GRIP",
+              min: 0,
+              max: 1,
+              step: 0.05,
+            },
+            {
+              widget: "switch",
+              path: "snowGround",
+              label: "ADMIN_F_SNOW_GROUND",
+              hint: "ADMIN_H_SNOW_GROUND",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "regions",
+      file: "regions",
+      icon: "map",
+      label: "ADMIN_TAB_REGIONS",
+      desc: "ADMIN_TAB_REGIONS_DESC",
+      listSub: "weathers",
+      createLabel: "ADMIN_NEW_REGION",
+      deleteLabel: "ADMIN_DELETE_REGION",
+      cards: [
+        {
+          icon: "map",
+          title: "ADMIN_C_REGION",
+          desc: "ADMIN_C_REGION_DESC",
+          fields: [
+            {
+              widget: "text",
+              path: "label",
+              label: "ADMIN_F_REGION_NAME",
+              placeholder: "ADMIN_P_REGION_NAME",
+              suggest: { from: "center" },
+            },
+            {
+              widget: "point",
+              path: "center",
+              label: "ADMIN_F_REGION_CENTER",
+              hint: "ADMIN_H_REGION_CENTER",
+              ground: true,
+            },
+            {
+              widget: "number",
+              path: "radius",
+              label: "ADMIN_F_REGION_RADIUS",
+              hint: "ADMIN_H_REGION_RADIUS",
+              min: 50,
+              max: 6000,
+              step: 50,
+              unit: "m",
+            },
+            {
+              widget: "tags",
+              path: "weathers",
+              label: "ADMIN_F_WEATHERS",
+              hint: "ADMIN_H_REGION_WEATHERS",
+              placeholder: "ADMIN_P_WEATHERS",
+            },
+            {
+              widget: "number",
+              path: "changeMinutes",
+              label: "ADMIN_F_CHANGE",
+              hint: "ADMIN_H_CHANGE",
+              min: 1,
+              max: 600,
+              unit: "min",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};

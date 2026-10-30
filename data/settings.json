@@ -14,5 +14,7 @@
     "FOGGY"
   ],
   "changeMinutes": 20,
-  "blackout": false
+  "blackout": false,
+  "snowGrip": 0.2,
+  "snowGround": true
 }

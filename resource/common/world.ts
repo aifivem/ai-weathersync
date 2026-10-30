@@ -53,6 +53,51 @@ export interface Settings {
   weathers: Weather[];
   changeMinutes: number;
   blackout: boolean;
+  /** Wheel grip lost in snow weather (0 = none, GTA default 0.2, 1 = ice). */
+  snowGrip: number;
+  /** Snow on the ground (tracks and the white pass) in snow weather. */
+  snowGround: boolean;
+}
+
+/** GlobalState prefix of a region's current weather (`ai:rweather:<id>`). */
+export const REGION_PREFIX = "ai:rweather:";
+/** Weathers that put snow on the ground. */
+export const SNOWY: ReadonlySet<string> = new Set([
+  "XMAS",
+  "SNOW",
+  "BLIZZARD",
+  "SNOWLIGHT",
+]);
+
+/** A part of the map with its own weather (mountains with snow, a desert without rain). */
+export interface Region {
+  id: string;
+  label: string;
+  center: { x: number; y: number; z: number };
+  radius: number;
+  weathers: Weather[];
+  changeMinutes: number;
+}
+
+export function readRegions(raw: unknown): Region[] {
+  return Object.entries(record(raw)).flatMap(([id, value]) => {
+    const v = record(value);
+    const c = record(v.center);
+    const weathers = Array.isArray(v.weathers)
+      ? v.weathers.filter(isWeather)
+      : [];
+    if (!weathers.length || id === "$schema") return [];
+    return [
+      {
+        id,
+        label: typeof v.label === "string" ? v.label : id,
+        center: { x: num(c.x, 0), y: num(c.y, 0), z: num(c.z, 0) },
+        radius: int(v.radius, 600, 50, 6000),
+        weathers,
+        changeMinutes: int(v.changeMinutes, 20, 1, 600),
+      },
+    ];
+  });
 }
 
 export function readSettings(raw: unknown): Settings {
@@ -66,6 +111,8 @@ export function readSettings(raw: unknown): Settings {
     weathers: list.length ? list : ["EXTRASUNNY", "CLEAR", "CLOUDS"],
     changeMinutes: int(s.changeMinutes, 20, 1, 600),
     blackout: bool(s.blackout, false),
+    snowGrip: num(s.snowGrip, 0.2, 0, 1),
+    snowGround: bool(s.snowGround, true),
   };
 }
 

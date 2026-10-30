@@ -6,8 +6,10 @@ import {
   KEYS,
   minutesAt,
   toClock,
+  SNOWY,
   type Clock,
 } from "common/world";
+import { Regions } from "./regions";
 
 const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? undefined);
 const weatherState = new GlobalKey(KEYS.weather, (v) =>
@@ -16,13 +18,21 @@ const weatherState = new GlobalKey(KEYS.weather, (v) =>
 
 /**
  * Applies the server's clock and weather: the clock runs on this client's own timer (server time offset taken once),
- * the weather changes over 15 s when GlobalState says so. Scripts can pause it (interiors) with the qb events.
+ * the weather changes over 15 s when GlobalState says so (or the region the player is in has its own). Scripts pause it
+ * (interiors) with the qb events, through ai-core's world layer (lib `world.pauseSync`).
  */
 class Sync {
   private clock: Clock | null = clockState.get() ?? null;
   private weather = "";
   private offset = 0;
   enabled = true;
+  /** The weather of the region the player is in (null: the world's). */
+  private region: string | null = null;
+  private last: unknown = null;
+  private readonly regions = new Regions((weather) => {
+    this.region = weather;
+    this.applyWeather(this.last);
+  });
 
   async start(): Promise<void> {
     const now: unknown = await triggerServerCallback(EVENTS.now).catch(
@@ -40,22 +50,22 @@ class Sync {
   }
 
   applyWeather(value: unknown, instant = false): void {
+    this.last = value;
     const w = record(value);
-    if (!this.enabled || !isWeather(w.type)) return;
+    const type = this.region ?? w.type;
+    if (!this.enabled || !isWeather(type)) return;
     SetArtificialLightsState(w.blackout === true);
     SetArtificialLightsStateAffectsVehicles(false);
-    if (w.type === this.weather) return;
-    this.weather = w.type;
+    const snowy = SNOWY.has(type);
+    ForceSnowPass(snowy && this.regions.settings.snowGround);
+    SetForceVehicleTrails(snowy);
+    SetForcePedFootstepsTracks(snowy);
+    if (type === this.weather) return;
+    this.weather = type;
     ClearOverrideWeather();
     ClearWeatherTypePersist();
-    SetWeatherTypeOvertimePersist(w.type, instant ? 0 : 15);
-    if (instant) SetWeatherTypeNowPersist(w.type);
-    SetForceVehicleTrails(
-      w.type === "XMAS" || w.type === "SNOW" || w.type === "BLIZZARD",
-    );
-    SetForcePedFootstepsTracks(
-      w.type === "XMAS" || w.type === "SNOW" || w.type === "BLIZZARD",
-    );
+    SetWeatherTypeOvertimePersist(type, instant ? 0 : 15);
+    if (instant) SetWeatherTypeNowPersist(type);
   }
 
   private tickClock(): void {

@@ -47,6 +47,16 @@
     "blackout": {
       "description": "Blackout: City lights go out (vehicles keep their lights).",
       "type": "boolean"
+    },
+    "snowGrip": {
+      "description": "Grip lost in snow: How much wheels slip in christmas snow: 0 drives like dry road, GTA's default is 0.2, 1 is ice.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "snowGround": {
+      "description": "Snow on the ground: Covers the ground white and leaves tyre and footprint tracks while it snows.",
+      "type": "boolean"
     }
   },
   "required": [

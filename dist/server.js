@@ -273,7 +273,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$5 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$6 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -287,7 +287,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$5.GetLookupValues(source);
+			list = core$6.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -489,7 +489,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$4 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
+const core$5 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
 function imported(spec, value) {
 	let base = clone(spec.newRecord ?? {}), out = {};
 	for (let name of Object.keys(spec.sections)) {
@@ -510,7 +510,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$4.RegisterAdminPanel(this.resource));
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$5.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -596,7 +596,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$4.AdminPanelChanged({
+		if (core$5.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -619,7 +619,7 @@ var AdminPanel = class {
 };
 resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/online.ts
-const core$2 = resourceExport(CORE.resource);
+const core$3 = resourceExport(CORE.resource);
 var OnlinePlayers = class {
 	players = new Map();
 	onDuty = new Map();
@@ -628,7 +628,7 @@ var OnlinePlayers = class {
 		if (this.started) return;
 		this.started = !0;
 		let load = (source, character) => {
-			this.put(source, character, (core$2.GetJobs(source) ?? []).map((m) => m.job), (core$2.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$2.GetDutyJob(source));
+			this.put(source, character, (core$3.GetJobs(source) ?? []).map((m) => m.job), (core$3.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$3.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => {
 			let player = this.players.get(source);
@@ -637,8 +637,8 @@ var OnlinePlayers = class {
 			let player = this.players.get(source);
 			player && (player.gangs = gangs.map((m) => m.gang));
 		}), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$2.GetLoadedSources()) {
-			let character = core$2.GetCharacter(source);
+		for (let source of core$3.GetLoadedSources()) {
+			let character = core$3.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -710,7 +710,10 @@ createLogger(resource), new class {
 			if (name === resource) for (let command of this.list) for (let n of command.info.names) emitNet("chat:removeSuggestion", -1, `/${n}`);
 		});
 	}
-}(), createLogger(GetCurrentResourceName()), createLogger("aicore-lib"), IsDuplicityVersion();
+}(), createLogger(GetCurrentResourceName()), createLogger("aicore-lib");
+// ../../../packages/lib/src/fivem/state.ts
+const stateString = (v) => typeof v == "string" ? v : void 0;
+IsDuplicityVersion();
 var Mirror = class {
 	key;
 	parse;
@@ -741,11 +744,46 @@ var Mirror = class {
 	put(value) {
 		this.apply("global", value);
 	}
+};
+const prefixListeners = new Map();
+let prefixHandler = !1;
+function listenPrefix(prefix, listener) {
+	let set = prefixListeners.get(prefix);
+	set || prefixListeners.set(prefix, set = new Set()), set.add(listener), prefixHandler || (prefixHandler = !0, AddStateBagChangeHandler("", "global", (_bag, key, value) => {
+		for (let [p, listeners] of prefixListeners) if (key.startsWith(p)) for (let l of listeners) l(key, value);
+	}));
+}
+var GlobalGroup$1 = class extends Mirror {
+	prefix;
+	constructor(prefix, parse) {
+		super(prefix, parse), this.prefix = prefix;
+		let keys = GetStateBagKeys("global");
+		for (let key of Array.isArray(keys) ? keys : []) {
+			if (typeof key != "string" || !key.startsWith(prefix)) continue;
+			let raw = GlobalState[key];
+			this.values.set(key.slice(prefix.length), raw == null ? void 0 : parse(raw));
+		}
+		listenPrefix(prefix, (key, value) => this.store(key.slice(prefix.length), value));
+	}
+	get(id) {
+		return this.values.get(id);
+	}
+	put(id, value) {
+		this.apply(id, value);
+	}
+	ids() {
+		return this.values.keys();
+	}
 }, GlobalKey = class extends GlobalKey$1 {
 	set(value) {
 		GlobalState.set(this.key, value ?? null, !0), this.put(value);
 	}
+}, GlobalGroup = class extends GlobalGroup$1 {
+	set(id, value) {
+		GlobalState.set(this.prefix + id, value ?? null, !0), this.put(id, value);
+	}
 };
+resourceExport(CORE.resource);
 // resource/common/world.ts
 const KEYS = {
 	clock: "ai:clock",
@@ -767,6 +805,23 @@ const KEYS = {
 	"XMAS",
 	"HALLOWEEN"
 ], isWeather = (v) => typeof v == "string" && WEATHERS.includes(v);
+function readRegions(raw) {
+	return Object.entries(record(raw)).flatMap(([id, value]) => {
+		let v = record(value), c = record(v.center), weathers = Array.isArray(v.weathers) ? v.weathers.filter(isWeather) : [];
+		return !weathers.length || id === "$schema" ? [] : [{
+			id,
+			label: typeof v.label == "string" ? v.label : id,
+			center: {
+				x: num(c.x, 0),
+				y: num(c.y, 0),
+				z: num(c.z, 0)
+			},
+			radius: int(v.radius, 600, 50, 6e3),
+			weathers,
+			changeMinutes: int(v.changeMinutes, 20, 1, 600)
+		}];
+	});
+}
 function readSettings(raw) {
 	let s = record(raw), list = Array.isArray(s.weathers) ? s.weathers.filter(isWeather) : [];
 	return {
@@ -780,7 +835,9 @@ function readSettings(raw) {
 			"CLOUDS"
 		],
 		changeMinutes: int(s.changeMinutes, 20, 1, 600),
-		blackout: bool(s.blackout, !1)
+		blackout: bool(s.blackout, !1),
+		snowGrip: num(s.snowGrip, .2, 0, 1),
+		snowGround: bool(s.snowGround, !0)
 	};
 }
 function minutesAt(clock, serverNow) {
@@ -796,93 +853,249 @@ function toClock(v) {
 		frozen: c.frozen === !0
 	} : null;
 }
-// resource/server/index.ts
-const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weatherState = new GlobalKey(KEYS.weather, (v) => isRecord(v) ? v : void 0), panel = new AdminPanel({
+const regionWeather = new class {
+	published = new GlobalGroup("ai:rweather:", stateString);
+	timers = new Map();
+	rebuild(regions) {
+		for (let timer of this.timers.values()) clearInterval(timer);
+		this.timers.clear();
+		let ids = new Set(regions.map((r) => r.id));
+		for (let id of [...this.published.ids()]) ids.has(id) || this.published.set(id, void 0);
+		for (let region of regions) {
+			let current = this.published.get(region.id);
+			current && region.weathers.includes(current) || this.published.set(region.id, region.weathers[0]), this.timers.set(region.id, setInterval(() => {
+				let list = region.weathers, at = list.indexOf(this.published.get(region.id));
+				this.published.set(region.id, list[(at + 1 + Math.floor(Math.random() * 2)) % list.length]);
+			}, region.changeMinutes * 6e4));
+		}
+	}
+}(), schema = {
 	title: "ADMIN_TITLE",
 	icon: "sliders",
-	files: { settings: {
-		kind: "settings",
-		sync: "all",
-		sections: {
-			timeScale: {
-				type: "number",
-				min: .1,
-				max: 120
+	files: {
+		settings: {
+			kind: "settings",
+			sync: "all",
+			sections: {
+				timeScale: {
+					type: "number",
+					min: .1,
+					max: 120
+				},
+				freezeTime: { type: "bool" },
+				startHour: {
+					type: "number",
+					min: 0,
+					max: 23,
+					integer: !0
+				},
+				dynamic: { type: "bool" },
+				weathers: {
+					type: "names",
+					max: 15,
+					itemMax: 16,
+					pattern: `^(${WEATHERS.join("|")})$`
+				},
+				changeMinutes: {
+					type: "number",
+					min: 1,
+					max: 600,
+					integer: !0
+				},
+				blackout: { type: "bool" },
+				snowGrip: {
+					type: "number",
+					min: 0,
+					max: 1,
+					optional: !0
+				},
+				snowGround: {
+					type: "bool",
+					optional: !0
+				}
 			},
-			freezeTime: { type: "bool" },
-			startHour: {
-				type: "number",
-				min: 0,
-				max: 23,
-				integer: !0
+			defaults: {
+				snowGrip: .2,
+				snowGround: !0
+			}
+		},
+		regions: {
+			kind: "records",
+			sync: "all",
+			labelPath: "label",
+			newRecord: {
+				center: {
+					x: 0,
+					y: 0,
+					z: 0
+				},
+				radius: 600,
+				weathers: ["SNOW", "SNOWLIGHT"],
+				changeMinutes: 20
 			},
-			dynamic: { type: "bool" },
-			weathers: {
-				type: "names",
-				max: 15,
-				itemMax: 16,
-				pattern: `^(${WEATHERS.join("|")})$`
-			},
-			changeMinutes: {
-				type: "number",
-				min: 1,
-				max: 600,
-				integer: !0
-			},
-			blackout: { type: "bool" }
+			sections: {
+				label: {
+					type: "text",
+					min: 1,
+					max: 48
+				},
+				center: { type: "vec3" },
+				radius: {
+					type: "number",
+					min: 50,
+					max: 6e3,
+					integer: !0
+				},
+				weathers: {
+					type: "names",
+					max: 15,
+					itemMax: 16,
+					pattern: `^(${WEATHERS.join("|")})$`
+				},
+				changeMinutes: {
+					type: "number",
+					min: 1,
+					max: 600,
+					integer: !0
+				}
+			}
 		}
-	} },
+	},
 	tabs: [{
 		id: "settings",
 		file: "settings",
 		icon: "sliders",
 		label: "ADMIN_TAB_SETTINGS",
 		desc: "ADMIN_TAB_SETTINGS_DESC",
-		cards: [{
-			icon: "sliders",
-			title: "ADMIN_C_TIME",
-			desc: "ADMIN_C_TIME_DESC",
-			fields: [
-				{
+		cards: [
+			{
+				icon: "sliders",
+				title: "ADMIN_C_TIME",
+				desc: "ADMIN_C_TIME_DESC",
+				fields: [
+					{
+						widget: "number",
+						path: "timeScale",
+						label: "ADMIN_F_SCALE",
+						hint: "ADMIN_H_SCALE",
+						min: .1,
+						max: 120,
+						step: .5
+					},
+					{
+						widget: "number",
+						path: "startHour",
+						label: "ADMIN_F_START_HOUR",
+						hint: "ADMIN_H_START_HOUR",
+						min: 0,
+						max: 23
+					},
+					{
+						widget: "switch",
+						path: "freezeTime",
+						label: "ADMIN_F_FREEZE",
+						hint: "ADMIN_H_FREEZE"
+					}
+				]
+			},
+			{
+				icon: "sliders",
+				title: "ADMIN_C_WEATHER",
+				desc: "ADMIN_C_WEATHER_DESC",
+				fields: [
+					{
+						widget: "switch",
+						path: "dynamic",
+						label: "ADMIN_F_DYNAMIC",
+						hint: "ADMIN_H_DYNAMIC"
+					},
+					{
+						widget: "tags",
+						path: "weathers",
+						label: "ADMIN_F_WEATHERS",
+						hint: "ADMIN_H_WEATHERS",
+						placeholder: "ADMIN_P_WEATHERS"
+					},
+					{
+						widget: "number",
+						path: "changeMinutes",
+						label: "ADMIN_F_CHANGE",
+						hint: "ADMIN_H_CHANGE",
+						min: 1,
+						max: 600,
+						unit: "min"
+					},
+					{
+						widget: "switch",
+						path: "blackout",
+						label: "ADMIN_F_BLACKOUT",
+						hint: "ADMIN_H_BLACKOUT"
+					}
+				]
+			},
+			{
+				icon: "snowflake",
+				title: "ADMIN_C_SNOW",
+				desc: "ADMIN_C_SNOW_DESC",
+				fields: [{
 					widget: "number",
-					path: "timeScale",
-					label: "ADMIN_F_SCALE",
-					hint: "ADMIN_H_SCALE",
-					min: .1,
-					max: 120,
-					step: .5
-				},
-				{
-					widget: "number",
-					path: "startHour",
-					label: "ADMIN_F_START_HOUR",
-					hint: "ADMIN_H_START_HOUR",
+					path: "snowGrip",
+					label: "ADMIN_F_SNOW_GRIP",
+					hint: "ADMIN_H_SNOW_GRIP",
 					min: 0,
-					max: 23
-				},
-				{
+					max: 1,
+					step: .05
+				}, {
 					widget: "switch",
-					path: "freezeTime",
-					label: "ADMIN_F_FREEZE",
-					hint: "ADMIN_H_FREEZE"
-				}
-			]
-		}, {
-			icon: "sliders",
-			title: "ADMIN_C_WEATHER",
-			desc: "ADMIN_C_WEATHER_DESC",
+					path: "snowGround",
+					label: "ADMIN_F_SNOW_GROUND",
+					hint: "ADMIN_H_SNOW_GROUND"
+				}]
+			}
+		]
+	}, {
+		id: "regions",
+		file: "regions",
+		icon: "map",
+		label: "ADMIN_TAB_REGIONS",
+		desc: "ADMIN_TAB_REGIONS_DESC",
+		listSub: "weathers",
+		createLabel: "ADMIN_NEW_REGION",
+		deleteLabel: "ADMIN_DELETE_REGION",
+		cards: [{
+			icon: "map",
+			title: "ADMIN_C_REGION",
+			desc: "ADMIN_C_REGION_DESC",
 			fields: [
 				{
-					widget: "switch",
-					path: "dynamic",
-					label: "ADMIN_F_DYNAMIC",
-					hint: "ADMIN_H_DYNAMIC"
+					widget: "text",
+					path: "label",
+					label: "ADMIN_F_REGION_NAME",
+					placeholder: "ADMIN_P_REGION_NAME",
+					suggest: { from: "center" }
+				},
+				{
+					widget: "point",
+					path: "center",
+					label: "ADMIN_F_REGION_CENTER",
+					hint: "ADMIN_H_REGION_CENTER",
+					ground: !0
+				},
+				{
+					widget: "number",
+					path: "radius",
+					label: "ADMIN_F_REGION_RADIUS",
+					hint: "ADMIN_H_REGION_RADIUS",
+					min: 50,
+					max: 6e3,
+					step: 50,
+					unit: "m"
 				},
 				{
 					widget: "tags",
 					path: "weathers",
 					label: "ADMIN_F_WEATHERS",
-					hint: "ADMIN_H_WEATHERS",
+					hint: "ADMIN_H_REGION_WEATHERS",
 					placeholder: "ADMIN_P_WEATHERS"
 				},
 				{
@@ -893,17 +1106,11 @@ const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weath
 					min: 1,
 					max: 600,
 					unit: "min"
-				},
-				{
-					widget: "switch",
-					path: "blackout",
-					label: "ADMIN_F_BLACKOUT",
-					hint: "ADMIN_H_BLACKOUT"
 				}
 			]
 		}]
 	}]
-}), content = { settings: readSettings(panel.get("settings")) }, world = new class {
+}, clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weatherState = new GlobalKey(KEYS.weather, (v) => isRecord(v) ? v : void 0), panel = new AdminPanel(schema), content = { settings: readSettings(panel.get("settings")) }, world = new class {
 	clock = {
 		base: content.settings.startHour * 60,
 		at: Date.now(),
@@ -911,11 +1118,14 @@ const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weath
 		frozen: content.settings.freezeTime
 	};
 	weather = content.settings.weathers[0] ?? "CLEAR";
+	blackout = null;
+	frozen = null;
+	dynamic = null;
 	timer = null;
 	publish() {
 		clockState.set(this.clock), weatherState.set({
 			type: this.weather,
-			blackout: content.settings.blackout
+			blackout: this.blackout ?? content.settings.blackout
 		});
 	}
 	setClock(minutes) {
@@ -924,20 +1134,20 @@ const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weath
 			base,
 			at: now,
 			scale: content.settings.timeScale,
-			frozen: content.settings.freezeTime
+			frozen: this.frozen ?? content.settings.freezeTime
 		}, this.publish();
 	}
 	setWeather(weather) {
 		this.weather = weather, this.publish();
 	}
 	schedule() {
-		this.timer && clearInterval(this.timer), this.timer = null, content.settings.dynamic && (this.timer = setInterval(() => {
+		this.timer && clearInterval(this.timer), this.timer = null, (this.dynamic ?? content.settings.dynamic) && (this.timer = setInterval(() => {
 			let list = content.settings.weathers, next = list[(list.indexOf(this.weather) + 1 + Math.floor(Math.random() * 2)) % list.length] ?? this.weather;
 			this.setWeather(next);
 		}, content.settings.changeMinutes * 6e4));
 	}
 }(), restored = clockState.get();
-restored && (world.clock = restored), world.publish(), world.schedule(), panel.onChange("settings", () => {
+restored && (world.clock = restored), world.publish(), world.schedule(), regionWeather.rebuild(readRegions(panel.get("regions"))), panel.onChange("regions", () => regionWeather.rebuild(readRegions(panel.get("regions")))), panel.onChange("settings", () => {
 	content.settings = readSettings(panel.get("settings")), world.setClock(null), content.settings.weathers.includes(world.weather) || world.setWeather(content.settings.weathers[0] ?? "CLEAR"), world.schedule();
 }), onClientCallback(EVENTS.now, () => Date.now(), { rate: {
 	count: 2,
@@ -950,6 +1160,16 @@ const api = {
 	},
 	setTime: (hour, minute) => typeof hour == "number" && (world.setClock((Math.floor(hour) % 24 * 60 + (typeof minute == "number" ? Math.floor(minute) : 0)) % 1440), !0),
 	getWeatherState: () => world.weather,
+	setBlackout: (on) => (world.blackout = on === !0, world.publish(), !0),
+	setTimeFreeze: (on) => (world.frozen = on === !0, world.setClock(null), !0),
+	setDynamicWeather: (on) => (world.dynamic = on === !0, world.schedule(), !0),
+	nextWeatherStage: () => {
+		let list = content.settings.weathers;
+		return world.setWeather(list[(list.indexOf(world.weather) + 1) % list.length] ?? world.weather), !0;
+	},
+	getBlackoutState: () => world.blackout ?? content.settings.blackout,
+	getTimeFreezeState: () => world.frozen ?? content.settings.freezeTime,
+	getDynamicWeather: () => world.dynamic ?? content.settings.dynamic,
 	getTime: () => {
 		let m = minutesAt(world.clock, Date.now());
 		return {
