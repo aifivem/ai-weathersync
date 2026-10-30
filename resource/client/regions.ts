@@ -21,13 +21,16 @@ export class Regions {
   private readonly zones = new Zones();
   private readonly weathers = new GlobalGroup(REGION_PREFIX, stateString);
   private readonly inside = new Map<string, Region>();
-  settings: Settings = readSettings(this.world.get("settings"));
+  private readonly view = this.world.view("settings", readSettings);
+
+  get settings(): Settings {
+    return this.view.value;
+  }
 
   constructor(private readonly onChange: (weather: string | null) => void) {
     this.build();
     this.world.onChange("regions", () => this.build());
     this.world.onChange("settings", () => {
-      this.settings = readSettings(this.world.get("settings"));
       SetVehicleXmasSnowFactor(this.settings.snowGrip);
       this.onChange(this.current());
     });

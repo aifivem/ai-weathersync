@@ -1,4 +1,5 @@
 import { bool, int, num, record } from "@aicore-fivem/lib/shared";
+import { isWeather, type Weather } from "@aicore-fivem/shared";
 
 /** ai-weathersync's contracts. No natives. */
 
@@ -14,27 +15,6 @@ export const EVENTS = {
   /** Callback: () -> number, the server's Date.now() (a client takes its clock offset once). */
   now: "ai-weathersync:now",
 } as const;
-
-export const WEATHERS = [
-  "EXTRASUNNY",
-  "CLEAR",
-  "NEUTRAL",
-  "SMOG",
-  "FOGGY",
-  "OVERCAST",
-  "CLOUDS",
-  "CLEARING",
-  "RAIN",
-  "THUNDER",
-  "SNOW",
-  "BLIZZARD",
-  "SNOWLIGHT",
-  "XMAS",
-  "HALLOWEEN",
-] as const;
-export type Weather = (typeof WEATHERS)[number];
-export const isWeather = (v: unknown): v is Weather =>
-  typeof v === "string" && (WEATHERS as readonly string[]).includes(v);
 
 export interface Clock {
   base: number;

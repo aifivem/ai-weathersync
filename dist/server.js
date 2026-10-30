@@ -204,7 +204,7 @@ const CORE = {
 	clientPlayerLoadedEvent: "ai-core:client:playerLoaded",
 	clientPlayerUnloadedEvent: "ai-core:client:playerUnloaded",
 	clientCharacterPortraitEvent: "ai-core:client:characterPortrait",
-	clientCharacterLookEvent: "ai-core:client:characterLook",
+	characterLooksEvent: "ai-core:client:characterLooks",
 	clientPromptPressedEvent: "ai-core:client:promptPressed",
 	clientCacheEvent: "ai-core:client:cache",
 	clientHudVisibleEvent: "ai-core:client:hudVisible",
@@ -227,7 +227,23 @@ const CORE = {
 	recommendationEvent: "ai-core:admin:recommendation",
 	worldEvent: (resource) => `${resource}:admin:world`,
 	worldChangesCallback: (resource) => `${resource}:admin:worldChanges`
-}, named = new Set();
+}, WEATHERS = [
+	"EXTRASUNNY",
+	"CLEAR",
+	"NEUTRAL",
+	"SMOG",
+	"FOGGY",
+	"OVERCAST",
+	"CLOUDS",
+	"CLEARING",
+	"RAIN",
+	"THUNDER",
+	"SNOW",
+	"BLIZZARD",
+	"SNOWLIGHT",
+	"XMAS",
+	"HALLOWEEN"
+], WEATHER_SET = new Set(WEATHERS), isWeather = (value) => typeof value == "string" && WEATHER_SET.has(value), named = new Set();
 function registerExport(name, handler) {
 	named.add(name), globalThis.exports(name, handler);
 	let first = name.charAt(0), twin = (first === first.toUpperCase() ? first.toLowerCase() : first.toUpperCase()) + name.slice(1);
@@ -373,7 +389,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$13 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$14 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -387,7 +403,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$13.GetLookupValues(source);
+			list = core$14.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -590,7 +606,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$12 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
+const core$13 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
 function imported(spec, value) {
 	let base = clone(spec.newRecord ?? {}), out = {};
 	for (let name of Object.keys(spec.sections)) {
@@ -614,7 +630,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$12.RegisterAdminPanel(this.resource));
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$13.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -748,7 +764,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$12.AdminPanelChanged({
+		if (core$13.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -771,7 +787,7 @@ var AdminPanel = class {
 };
 resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/online.ts
-const core$10 = resourceExport(CORE.resource);
+const core$11 = resourceExport(CORE.resource);
 var OnlinePlayers = class {
 	players = new Map();
 	onDuty = new Map();
@@ -780,7 +796,7 @@ var OnlinePlayers = class {
 		if (this.started) return;
 		this.started = !0;
 		let load = (source, character) => {
-			this.put(source, character, (core$10.GetJobs(source) ?? []).map((m) => m.job), (core$10.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$10.GetDutyJob(source));
+			this.put(source, character, (core$11.GetJobs(source) ?? []).map((m) => m.job), (core$11.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$11.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => {
 			let player = this.players.get(source);
@@ -789,8 +805,8 @@ var OnlinePlayers = class {
 			let player = this.players.get(source);
 			player && (player.gangs = gangs.map((m) => m.gang));
 		}), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$10.GetLoadedSources()) {
-			let character = core$10.GetCharacter(source);
+		for (let source of core$11.GetLoadedSources()) {
+			let character = core$11.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -935,28 +951,12 @@ var GlobalGroup$1 = class extends Mirror {
 		GlobalState.set(this.prefix + id, value ?? null, !0), this.put(id, value);
 	}
 };
-resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
+resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
 // resource/common/world.ts
 const KEYS = {
 	clock: "ai:clock",
 	weather: "ai:weather"
-}, EVENTS = { now: "ai-weathersync:now" }, WEATHERS = [
-	"EXTRASUNNY",
-	"CLEAR",
-	"NEUTRAL",
-	"SMOG",
-	"FOGGY",
-	"OVERCAST",
-	"CLOUDS",
-	"CLEARING",
-	"RAIN",
-	"THUNDER",
-	"SNOW",
-	"BLIZZARD",
-	"SNOWLIGHT",
-	"XMAS",
-	"HALLOWEEN"
-], isWeather = (v) => typeof v == "string" && WEATHERS.includes(v);
+}, EVENTS = { now: "ai-weathersync:now" };
 function readRegions(raw) {
 	return Object.entries(record(raw)).flatMap(([id, value]) => {
 		let v = record(value), c = record(v.center), weathers = Array.isArray(v.weathers) ? v.weathers.filter(isWeather) : [];
@@ -1262,7 +1262,9 @@ const regionWeather = new class {
 			]
 		}]
 	}]
-}, clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weatherState = new GlobalKey(KEYS.weather, (v) => isRecord(v) ? v : void 0), panel = new AdminPanel(schema), content = { settings: readSettings(panel.get("settings")) }, world = new class {
+}, clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? void 0), weatherState = new GlobalKey(KEYS.weather, (v) => isRecord(v) ? v : void 0), panel = new AdminPanel(schema), settings = panel.view("settings", readSettings), content = { get settings() {
+	return settings.value;
+} }, world = new class {
 	clock = {
 		base: content.settings.startHour * 60,
 		at: Date.now(),
@@ -1300,7 +1302,7 @@ const regionWeather = new class {
 	}
 }(), restored = clockState.get();
 restored && (world.clock = restored), world.publish(), world.schedule(), regionWeather.rebuild(readRegions(panel.get("regions"))), panel.onChange("regions", () => regionWeather.rebuild(readRegions(panel.get("regions")))), panel.onChange("settings", () => {
-	content.settings = readSettings(panel.get("settings")), world.setClock(null), content.settings.weathers.includes(world.weather) || world.setWeather(content.settings.weathers[0] ?? "CLEAR"), world.schedule();
+	world.setClock(null), content.settings.weathers.includes(world.weather) || world.setWeather(content.settings.weathers[0] ?? "CLEAR"), world.schedule();
 }), onClientCallback(EVENTS.now, () => Date.now(), { rate: {
 	count: 2,
 	windowMs: 1e4

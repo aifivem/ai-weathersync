@@ -10,15 +10,14 @@ import { regionWeather } from "./regions";
 import { schema } from "./schema";
 import {
   EVENTS,
-  isWeather,
   KEYS,
   minutesAt,
   readRegions,
   readSettings,
   toClock,
   type Clock,
-  type Weather,
 } from "common/world";
+import { isWeather, type Weather } from "@aicore-fivem/shared";
 
 const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? undefined);
 const weatherState = new GlobalKey(KEYS.weather, (v) =>
@@ -26,8 +25,13 @@ const weatherState = new GlobalKey(KEYS.weather, (v) =>
 );
 
 const panel = new AdminPanel(schema);
-/** Panel settings, parsed again after every change. */
-const content = { settings: readSettings(panel.get("settings")) };
+const settings = panel.view("settings", readSettings);
+/** Panel settings, kept current by the panel's view. */
+const content = {
+  get settings() {
+    return settings.value;
+  },
+};
 
 /** The world's clock and weather: published as GlobalState only when they change (clients run the clock themselves). */
 class World {
@@ -96,7 +100,6 @@ panel.onChange("regions", () =>
   regionWeather.rebuild(readRegions(panel.get("regions"))),
 );
 panel.onChange("settings", () => {
-  content.settings = readSettings(panel.get("settings"));
   world.setClock(null);
   if (!content.settings.weathers.includes(world.weather))
     world.setWeather(content.settings.weathers[0] ?? "CLEAR");

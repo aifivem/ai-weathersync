@@ -1,8 +1,8 @@
 import { GlobalKey, triggerServerCallback } from "@aicore-fivem/lib/client";
 import { isRecord, record } from "@aicore-fivem/lib/shared";
+import { isWeather } from "@aicore-fivem/shared";
 import {
   EVENTS,
-  isWeather,
   KEYS,
   minutesAt,
   toClock,

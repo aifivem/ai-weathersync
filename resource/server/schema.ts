@@ -1,5 +1,4 @@
-import type { PanelSchema } from "@aicore-fivem/shared";
-import { WEATHERS } from "common/world";
+import { WEATHERS, type PanelSchema } from "@aicore-fivem/shared";
 
 /** ai-weathersync's panel: how time runs and how the weather changes. */
 export const schema: PanelSchema = {
