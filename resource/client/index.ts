@@ -10,7 +10,9 @@ import {
 } from "common/world";
 
 const clockState = new GlobalKey(KEYS.clock, (v) => toClock(v) ?? undefined);
-const weatherState = new GlobalKey(KEYS.weather, (v) => (isRecord(v) ? v : undefined));
+const weatherState = new GlobalKey(KEYS.weather, (v) =>
+  isRecord(v) ? v : undefined,
+);
 
 /**
  * Applies the server's clock and weather: the clock runs on this client's own timer (server time offset taken once),
