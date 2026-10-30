@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-weathersync/data/settings.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    },
+    "timeScale": {
+      "description": "Speed: Game minutes per real minute: 2 makes a game day last 12 real hours, 30 is GTA Online's 48 minutes.",
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 120
+    },
+    "freezeTime": {
+      "description": "Stop the clock: Time stands still at the current hour.",
+      "type": "boolean"
+    },
+    "startHour": {
+      "description": "Hour after a restart: The clock starts at this hour when the server starts.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 23
+    },
+    "dynamic": {
+      "description": "Changing weather: Off: the first weather of the list stays.",
+      "type": "boolean"
+    },
+    "weathers": {
+      "description": "Weathers: GTA weather names in the order they follow (EXTRASUNNY, CLEAR, CLOUDS, OVERCAST, RAIN, THUNDER, CLEARING, FOGGY, SMOG, SNOW, XMAS...).",
+      "type": "array",
+      "maxItems": 15,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "maxLength": 16,
+        "pattern": "^(EXTRASUNNY|CLEAR|NEUTRAL|SMOG|FOGGY|OVERCAST|CLOUDS|CLEARING|RAIN|THUNDER|SNOW|BLIZZARD|SNOWLIGHT|XMAS|HALLOWEEN)$"
+      }
+    },
+    "changeMinutes": {
+      "description": "Change every: Real minutes between weather changes.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 600
+    },
+    "blackout": {
+      "description": "Blackout: City lights go out (vehicles keep their lights).",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "timeScale",
+    "freezeTime",
+    "startHour",
+    "dynamic",
+    "weathers",
+    "changeMinutes",
+    "blackout"
+  ]
+}
