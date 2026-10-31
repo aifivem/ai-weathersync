@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/aifivem/ai-weathersync/compare/v0.1.1...v0.1.2) (2026-10-31)
+
+
+### Miscellaneous Chores
+
+* rebuild with the current lib ([33ad4dd](https://github.com/aifivem/ai-weathersync/commit/33ad4ddf50472f3d5230da50f6d327538e9de87c))
+
 ## [0.1.1](https://github.com/aifivem/ai-weathersync/compare/v0.1.0...v0.1.1) (2026-10-31)
 
 
