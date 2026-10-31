@@ -59,25 +59,24 @@ export interface Region {
   changeMinutes: number;
 }
 
-export function readRegions(raw: unknown): Region[] {
-  return Object.entries(record(raw)).flatMap(([id, value]) => {
-    const v = record(value);
-    const c = record(v.center);
-    const weathers = Array.isArray(v.weathers)
-      ? v.weathers.filter(isWeather)
-      : [];
-    if (!weathers.length || id === "$schema") return [];
-    return [
-      {
-        id,
-        label: typeof v.label === "string" ? v.label : id,
-        center: { x: num(c.x, 0), y: num(c.y, 0), z: num(c.z, 0) },
-        radius: int(v.radius, 600, 50, 6000),
-        weathers,
-        changeMinutes: int(v.changeMinutes, 20, 1, 600),
-      },
-    ];
-  });
+/** One region record (`records` / `RecordObjects` reader); null without a weather. */
+export function readRegion(
+  id: string,
+  v: Record<string, unknown>,
+): Region | null {
+  const c = record(v.center);
+  const weathers = Array.isArray(v.weathers)
+    ? v.weathers.filter(isWeather)
+    : [];
+  if (!weathers.length) return null;
+  return {
+    id,
+    label: typeof v.label === "string" ? v.label : id,
+    center: { x: num(c.x, 0), y: num(c.y, 0), z: num(c.z, 0) },
+    radius: int(v.radius, 600, 50, 6000),
+    weathers,
+    changeMinutes: int(v.changeMinutes, 20, 1, 600),
+  };
 }
 
 export function readSettings(raw: unknown): Settings {

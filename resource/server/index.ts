@@ -8,13 +8,12 @@ import {
   provideExport,
   registerExport,
 } from "@aicore-fivem/lib/server";
-import { regionWeather } from "./regions";
+import { startRegionWeather } from "./regions";
 import { schema } from "./schema";
 import {
   EVENTS,
   KEYS,
   minutesAt,
-  readRegions,
   readSettings,
   toClock,
   type Clock,
@@ -101,10 +100,7 @@ const restored = clockState.get();
 if (restored) world.clock = restored;
 world.publish();
 world.schedule();
-regionWeather.rebuild(readRegions(panel.get("regions")));
-panel.onChange("regions", () =>
-  regionWeather.rebuild(readRegions(panel.get("regions"))),
-);
+startRegionWeather(panel);
 panel.onChange("settings", () => {
   world.setClock(null);
   if (!content.settings.weathers.includes(world.weather))

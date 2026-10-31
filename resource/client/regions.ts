@@ -4,8 +4,9 @@ import {
   stateString,
   Zones,
 } from "@aicore-fivem/lib/client";
+import { RecordObjects } from "@aicore-fivem/lib/shared";
 import {
-  readRegions,
+  readRegion,
   readSettings,
   REGION_PREFIX,
   type Region,
@@ -28,8 +29,28 @@ export class Regions {
   }
 
   constructor(private readonly onChange: (weather: string | null) => void) {
-    this.build();
-    this.world.onChange("regions", () => this.build());
+    // One zone per region; an edit replaces only that region's zone (a replaced or removed zone fires its exit).
+    new RecordObjects(this.world, "regions", readRegion, (id, region) => {
+      this.zones.add(id, {
+        shape: {
+          type: "cylinder",
+          center: region.center,
+          radius: region.radius,
+          height: 2000,
+        },
+        interval: 2000,
+        onEnter: () => {
+          this.inside.set(id, region);
+          this.onChange(this.current());
+        },
+        onExit: () => {
+          this.inside.delete(id);
+          this.onChange(this.current());
+        },
+      });
+      return () => this.zones.remove(id);
+    });
+    this.onChange(this.current());
     this.world.onChange("settings", () => {
       SetVehicleXmasSnowFactor(this.settings.snowGrip);
       this.onChange(this.current());
@@ -46,29 +67,5 @@ export class Regions {
     for (const r of this.inside.values())
       if (!best || r.radius < best.radius) best = r;
     return best ? (this.weathers.get(best.id) ?? null) : null;
-  }
-
-  private build(): void {
-    this.zones.clear();
-    this.inside.clear();
-    for (const region of readRegions(this.world.get("regions")))
-      this.zones.add(region.id, {
-        shape: {
-          type: "cylinder",
-          center: region.center,
-          radius: region.radius,
-          height: 2000,
-        },
-        interval: 2000,
-        onEnter: () => {
-          this.inside.set(region.id, region);
-          this.onChange(this.current());
-        },
-        onExit: () => {
-          this.inside.delete(region.id);
-          this.onChange(this.current());
-        },
-      });
-    this.onChange(this.current());
   }
 }

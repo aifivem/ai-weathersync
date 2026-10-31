@@ -1,46 +1,42 @@
-import {
-  every,
-  GlobalGroup,
-  type Job,
-  stateString,
-} from "@aicore-fivem/lib/server";
-import { REGION_PREFIX, type Region } from "common/world";
+import { every, GlobalGroup, stateString } from "@aicore-fivem/lib/server";
+import { RecordObjects, type RecordSource } from "@aicore-fivem/lib/shared";
+import { readRegion, REGION_PREFIX } from "common/world";
+
+const published = new GlobalGroup(REGION_PREFIX, stateString);
 
 /**
  * Regions with their own weather: each steps through its own list on its own job and publishes the current one as
- * GlobalState `ai:rweather:<id>`; clients inside a region show it instead of the world's weather.
+ * GlobalState `ai:rweather:<id>`; clients inside a region show it instead of the world's weather. A panel edit
+ * restarts only that region's job; a deleted region's weather is removed.
  */
-class RegionWeather {
-  private readonly published = new GlobalGroup(REGION_PREFIX, stateString);
-  private readonly timers = new Map<string, Job>();
-
-  rebuild(regions: Region[]): void {
-    for (const timer of this.timers.values()) timer.stop();
-    this.timers.clear();
-    const ids = new Set(regions.map((r) => r.id));
-    for (const id of this.published.ids())
-      if (!ids.has(id)) this.published.set(id, undefined);
-    for (const region of regions) {
-      const current = this.published.get(region.id);
+export function startRegionWeather(panel: RecordSource): void {
+  const regions = new RecordObjects(
+    panel,
+    "regions",
+    readRegion,
+    (id, region) => {
+      const current = published.get(id);
       if (!current || !region.weathers.includes(current as never))
-        this.published.set(region.id, region.weathers[0]);
-      this.timers.set(
-        region.id,
-        every(
-          region.changeMinutes * 60_000,
-          () => {
-            const list = region.weathers;
-            const at = list.indexOf(this.published.get(region.id) as never);
-            this.published.set(
-              region.id,
-              list[(at + 1 + Math.floor(Math.random() * 2)) % list.length],
-            );
-          },
-          { name: `region ${region.id}` },
-        ),
+        published.set(id, region.weathers[0]);
+      const timer = every(
+        region.changeMinutes * 60_000,
+        () => {
+          const list = region.weathers;
+          const at = list.indexOf(published.get(id) as never);
+          published.set(
+            id,
+            list[(at + 1 + Math.floor(Math.random() * 2)) % list.length],
+          );
+        },
+        { name: `region ${id}` },
       );
-    }
-  }
+      return () => {
+        timer.stop();
+        if (!regions.records.has(id)) published.set(id, undefined);
+      };
+    },
+  );
+  // Regions deleted while the resource was stopped (GlobalState outlives a restart).
+  for (const id of published.ids())
+    if (!regions.records.has(id)) published.set(id, undefined);
 }
-
-export const regionWeather = new RegionWeather();

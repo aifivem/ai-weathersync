@@ -13,8 +13,8 @@ function bool(value, fallback) {
 function record(value) {
 	return typeof value == "object" && value && !Array.isArray(value) ? value : {};
 }
-// ../../../packages/lib/src/shared/records.ts
-const isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
+// ../../../packages/lib/src/shared/access.ts
+const isPublic = (rule) => rule.jobs.length === 0 && rule.gangs.length === 0, isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
 function readRecords(raw, readOne) {
 	let out = new Map();
 	if (!isObject(raw)) return out;
@@ -61,6 +61,28 @@ var FileViews = class {
 		if (key === void 0) return this.reset(whole);
 		let parsed = isObject(value) ? this.readOne(key, value) : null;
 		parsed === null ? this.map.delete(key) : this.map.set(key, parsed);
+	}
+}, RecordObjects = class {
+	build;
+	records;
+	built = new Map();
+	constructor(source, file, readOne, build) {
+		this.build = build, this.records = source.records(file, readOne), source.onChange(file, (key) => key === void 0 ? this.rebuildAll() : this.rebuild(key)), this.rebuildAll();
+	}
+	rebuild(key) {
+		this.built.get(key)?.(), this.built.delete(key);
+		let record = this.records.get(key);
+		if (record === void 0) return;
+		let remove = this.build(key, record);
+		remove && this.built.set(key, remove);
+	}
+	rebuildAll() {
+		for (let remove of this.built.values()) remove();
+		this.built.clear();
+		for (let [key, record] of this.records) {
+			let remove = this.build(key, record);
+			remove && this.built.set(key, remove);
+		}
 	}
 };
 // ../../../packages/lib/src/shared/index.ts
@@ -224,6 +246,7 @@ const CORE = {
 }, ADMIN = {
 	ace: "ai.admin",
 	openCallback: "ai-core:admin:open",
+	panelDataCallback: "ai-core:admin:panelData",
 	applyCallback: "ai-core:admin:apply",
 	closeEvent: "ai-core:admin:close",
 	showEvent: "ai-core:admin:show",
@@ -688,7 +711,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelSummary", () => this.summary()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
 			count: 4,
 			windowMs: 1e4
 		} }), setImmediate(() => core$14.RegisterAdminPanel(this.resource));
@@ -717,6 +740,27 @@ var AdminPanel = class {
 			schema: this.schema,
 			texts: loadLocaleTexts(),
 			data: clone(Object.fromEntries(this.data))
+		};
+	}
+	summary() {
+		let data = {}, index = {};
+		for (let [file, spec] of Object.entries(this.schema.files)) {
+			let content = this.data.get(file);
+			if (spec.kind !== "records") {
+				data[file] = clone(content ?? {});
+				continue;
+			}
+			let labels = {};
+			for (let [key, record] of Object.entries(content ?? {})) labels[key] = labelOf(record, spec.labelPath) ?? key;
+			index[file] = labels;
+		}
+		return {
+			resource: this.resource,
+			schema: this.schema,
+			texts: loadLocaleTexts(),
+			data,
+			loaded: !1,
+			index
 		};
 	}
 	apply(admin, raw) {
@@ -802,6 +846,15 @@ var AdminPanel = class {
 		this.data.set(name, data), (filled || raw === null || !file.hasSchemaRef()) && file.write(data);
 	}
 };
+function labelOf(record, path) {
+	if (!path) return null;
+	let at = record;
+	for (let part of path.split(".")) {
+		if (typeof at != "object" || !at) return null;
+		at = at[part];
+	}
+	return typeof at == "string" && at !== "" ? at : null;
+}
 resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/online.ts
 const core$12 = resourceExport(CORE.resource);
@@ -904,6 +957,20 @@ var OnlinePlayers = class {
 	onDutyIn(source, jobs) {
 		let duty = this.dutyJob(source);
 		return duty !== null && jobs.includes(duty);
+	}
+	allows(source, rule) {
+		if (isPublic(rule)) return !0;
+		let min = (name) => rule.grades[name] ?? 0;
+		for (let gang of rule.gangs) {
+			let grade = this.gangGrade(source, gang);
+			if (grade !== null && grade >= min(gang)) return !0;
+		}
+		let duty = rule.onDuty ? this.dutyJob(source) : null;
+		for (let job of rule.jobs) {
+			let grade = this.jobGrade(source, job);
+			if (grade !== null && grade >= min(job) && (!rule.onDuty || duty === job)) return !0;
+		}
+		return !1;
 	}
 	countOnDuty(jobs) {
 		this.start();
@@ -1175,22 +1242,20 @@ const KEYS = {
 	clock: "ai:clock",
 	weather: "ai:weather"
 }, EVENTS = { now: "ai-weathersync:now" };
-function readRegions(raw) {
-	return Object.entries(record(raw)).flatMap(([id, value]) => {
-		let v = record(value), c = record(v.center), weathers = Array.isArray(v.weathers) ? v.weathers.filter(isWeather) : [];
-		return !weathers.length || id === "$schema" ? [] : [{
-			id,
-			label: typeof v.label == "string" ? v.label : id,
-			center: {
-				x: num(c.x, 0),
-				y: num(c.y, 0),
-				z: num(c.z, 0)
-			},
-			radius: int(v.radius, 600, 50, 6e3),
-			weathers,
-			changeMinutes: int(v.changeMinutes, 20, 1, 600)
-		}];
-	});
+function readRegion(id, v) {
+	let c = record(v.center), weathers = Array.isArray(v.weathers) ? v.weathers.filter(isWeather) : [];
+	return weathers.length ? {
+		id,
+		label: typeof v.label == "string" ? v.label : id,
+		center: {
+			x: num(c.x, 0),
+			y: num(c.y, 0),
+			z: num(c.z, 0)
+		},
+		radius: int(v.radius, 600, 50, 6e3),
+		weathers,
+		changeMinutes: int(v.changeMinutes, 20, 1, 600)
+	} : null;
 }
 function readSettings(raw) {
 	let s = record(raw), list = Array.isArray(s.weathers) ? s.weathers.filter(isWeather) : [];
@@ -1223,23 +1288,24 @@ function toClock(v) {
 		frozen: c.frozen === !0
 	} : null;
 }
-const regionWeather = new class {
-	published = new GlobalGroup("ai:rweather:", stateString);
-	timers = new Map();
-	rebuild(regions) {
-		for (let timer of this.timers.values()) timer.stop();
-		this.timers.clear();
-		let ids = new Set(regions.map((r) => r.id));
-		for (let id of this.published.ids()) ids.has(id) || this.published.set(id, void 0);
-		for (let region of regions) {
-			let current = this.published.get(region.id);
-			current && region.weathers.includes(current) || this.published.set(region.id, region.weathers[0]), this.timers.set(region.id, every(region.changeMinutes * 6e4, () => {
-				let list = region.weathers, at = list.indexOf(this.published.get(region.id));
-				this.published.set(region.id, list[(at + 1 + Math.floor(Math.random() * 2)) % list.length]);
-			}, { name: `region ${region.id}` }));
-		}
-	}
-}(), schema = {
+// resource/server/regions.ts
+const published = new GlobalGroup("ai:rweather:", stateString);
+function startRegionWeather(panel) {
+	let regions = new RecordObjects(panel, "regions", readRegion, (id, region) => {
+		let current = published.get(id);
+		current && region.weathers.includes(current) || published.set(id, region.weathers[0]);
+		let timer = every(region.changeMinutes * 6e4, () => {
+			let list = region.weathers, at = list.indexOf(published.get(id));
+			published.set(id, list[(at + 1 + Math.floor(Math.random() * 2)) % list.length]);
+		}, { name: `region ${id}` });
+		return () => {
+			timer.stop(), regions.records.has(id) || published.set(id, void 0);
+		};
+	});
+	for (let id of published.ids()) regions.records.has(id) || published.set(id, void 0);
+}
+// resource/server/schema.ts
+const schema = {
 	title: "ADMIN_TITLE",
 	icon: "sliders",
 	files: {
@@ -1519,7 +1585,7 @@ const regionWeather = new class {
 		}, { name: "weather" }));
 	}
 }(), restored = clockState.get();
-restored && (world.clock = restored), world.publish(), world.schedule(), regionWeather.rebuild(readRegions(panel.get("regions"))), panel.onChange("regions", () => regionWeather.rebuild(readRegions(panel.get("regions")))), panel.onChange("settings", () => {
+restored && (world.clock = restored), world.publish(), world.schedule(), startRegionWeather(panel), panel.onChange("settings", () => {
 	world.setClock(null), content.settings.weathers.includes(world.weather) || world.setWeather(content.settings.weathers[0] ?? "CLEAR"), world.schedule();
 }), onClientCallback(EVENTS.now, () => Date.now(), { rate: {
 	count: 2,
