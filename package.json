@@ -7,7 +7,7 @@
   "author": {
     "name": "TGIANN"
   },
-  "repository": "github:TGIANN/ai-weathersync",
+  "repository": "github:aifivem/ai-weathersync",
   "type": "module",
   "fxDependencies": [
     "/onesync",
