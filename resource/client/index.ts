@@ -4,7 +4,7 @@ import {
   optionalExport,
   triggerServerCallback,
 } from "@aicore-fivem/lib/client";
-import { isRecord, record } from "@aicore-fivem/lib/shared";
+import { isRecord, record, ServerClock } from "@aicore-fivem/lib/shared";
 import { CORE, isWeather } from "@aicore-fivem/shared";
 import {
   EVENTS,
@@ -30,7 +30,7 @@ const weatherState = new GlobalKey(KEYS.weather, (v) =>
 class Sync {
   private clock: Clock | null = clockState.get() ?? null;
   private weather = "";
-  private offset = 0;
+  private readonly serverClock = new ServerClock();
   enabled = true;
   /** The weather of the region the player is in (null: the world's). */
   private region: string | null = null;
@@ -44,7 +44,7 @@ class Sync {
     const now: unknown = await triggerServerCallback(EVENTS.now).catch(
       () => null,
     );
-    if (typeof now === "number") this.offset = now - Date.now();
+    if (typeof now === "number") this.serverClock.sync(now);
     this.applyWeather(weatherState.get(), true);
     every(2000, () => this.tickClock(), { name: "clock" });
     this.applyRate();
@@ -94,7 +94,7 @@ class Sync {
 
   private tickClock(): void {
     if (!this.enabled || !this.clock) return;
-    const minutes = minutesAt(this.clock, Date.now() + this.offset);
+    const minutes = minutesAt(this.clock, this.serverClock.now());
     NetworkOverrideClockTime(
       Math.floor(minutes / 60),
       Math.floor(minutes % 60),
