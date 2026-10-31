@@ -1,6 +1,6 @@
 name 'ai-weathersync'
 author 'TGIANN'
-version '0.1.0'
+version '0.1.0' -- x-release-please-version
 license 'GPL-3.0-only'
 description 'Time and weather synced for everyone, set in the admin panel'
 repository 'https://github.com/aifivem/ai-weathersync'
