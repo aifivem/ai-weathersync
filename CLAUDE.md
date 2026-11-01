@@ -18,4 +18,4 @@ Time and weather, the same for every player, set in the admin panel (speed, star
 
 ## Entry points
 
-- Server: clock, weather, panel schema `resource/server/index.ts`. Client: `resource/client/index.ts`.
+- Server: clock and weather `resource/server/world.ts`, exports `server/exports.ts`, panel settings `server/content.ts`, panel schema `server/schema/`. Client: `resource/client/sync.ts`.
