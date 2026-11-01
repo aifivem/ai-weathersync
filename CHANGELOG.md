@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/aifivem/ai-weathersync/compare/v0.1.2...v0.1.3) (2026-11-01)
+
+
+### Code Refactoring
+
+* feature folders, side entries that only import, panel schema per tab ([1f95d36](https://github.com/aifivem/ai-weathersync/commit/1f95d36f4b3e7975d654c6d7c92f038df142c2b8))
+
 ## [0.1.2](https://github.com/aifivem/ai-weathersync/compare/v0.1.1...v0.1.2) (2026-10-31)
 
 
