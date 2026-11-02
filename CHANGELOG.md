@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5](https://github.com/aifivem/ai-weathersync/compare/v0.1.4...v0.1.5) (2026-11-02)
+
+
+### Documentation
+
+* install from the release zip ([095ab0e](https://github.com/aifivem/ai-weathersync/commit/095ab0ecf2d52a62599af94f2879a00141345096))
+
+
+### Miscellaneous Chores
+
+* build files are no longer in git, the release zip carries them ([a44a73d](https://github.com/aifivem/ai-weathersync/commit/a44a73d579b3acd6237b209ff2ec41b5082549a3))
+
 ## [0.1.4](https://github.com/aifivem/ai-weathersync/compare/v0.1.3...v0.1.4) (2026-11-02)
 
 
