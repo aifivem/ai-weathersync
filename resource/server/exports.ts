@@ -1,5 +1,5 @@
-import { provideExport, registerExport } from "@aicore-fivem/lib/server";
-import { isWeather } from "@aicore-fivem/shared";
+import { provideExport, registerExport } from "@aifivem/lib/server";
+import { isWeather } from "@aifivem/shared";
 import { minutesAt } from "common/world";
 import { content } from "./content";
 import { world } from "./world";

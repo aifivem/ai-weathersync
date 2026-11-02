@@ -1,5 +1,5 @@
-import { bool, int, num, record } from "@aicore-fivem/lib/shared";
-import { isWeather, type Weather } from "@aicore-fivem/shared";
+import { bool, int, num, record } from "@aifivem/lib/shared";
+import { isWeather, type Weather } from "@aifivem/shared";
 
 /** ai-weathersync's contracts. No natives. */
 

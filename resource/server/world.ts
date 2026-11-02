@@ -1,12 +1,12 @@
-import { isRecord } from "@aicore-fivem/lib/shared";
+import { isRecord } from "@aifivem/lib/shared";
 import {
   every,
   GlobalKey,
   type Job,
   onClientCallback,
-} from "@aicore-fivem/lib/server";
+} from "@aifivem/lib/server";
 import { EVENTS, KEYS, minutesAt, toClock, type Clock } from "common/world";
-import type { Weather } from "@aicore-fivem/shared";
+import type { Weather } from "@aifivem/shared";
 import { content, panel } from "./content";
 import { startRegionWeather } from "./regions";
 

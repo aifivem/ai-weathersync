@@ -3,8 +3,8 @@ import {
   GlobalGroup,
   stateString,
   Zones,
-} from "@aicore-fivem/lib/client";
-import { RecordObjects } from "@aicore-fivem/lib/shared";
+} from "@aifivem/lib/client";
+import { RecordObjects } from "@aifivem/lib/shared";
 import {
   readRegion,
   readSettings,

@@ -1,5 +1,5 @@
-import { every, GlobalGroup, stateString } from "@aicore-fivem/lib/server";
-import { RecordObjects, type RecordSource } from "@aicore-fivem/lib/shared";
+import { every, GlobalGroup, stateString } from "@aifivem/lib/server";
+import { RecordObjects, type RecordSource } from "@aifivem/lib/shared";
 import { readRegion, REGION_PREFIX } from "common/world";
 
 const published = new GlobalGroup(REGION_PREFIX, stateString);
