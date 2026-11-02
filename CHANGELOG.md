@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/aifivem/ai-weathersync/compare/v0.1.3...v0.1.4) (2026-11-02)
+
+
+### Code Refactoring
+
+* import the shared packages from [@aifivem](https://github.com/aifivem) ([580632f](https://github.com/aifivem/ai-weathersync/commit/580632f1e090ea13d4e21dc5a87d6396882ec5d8))
+
 ## [0.1.3](https://github.com/aifivem/ai-weathersync/compare/v0.1.2...v0.1.3) (2026-11-01)
 
 
